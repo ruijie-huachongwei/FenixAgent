@@ -34,8 +34,13 @@ COPY --from=oven/bun:1 /usr/local/bin/bun /usr/local/bin/bun
 COPY --from=acp-runtime-build /tmp/acp-runtime/dist/bin.js /usr/local/bin/acp-runtime.js
 
 # 与根 Dockerfile 保持同一官方安装方式；该镜像独立构建，不能复用控制面镜像层，故保留此处安装。
-RUN export PERI_INSTALL_DIR=/opt/.peri-binary && curl -fsSL https://raw.githubusercontent.com/konghayao/peri/main/scripts/install.sh | bash
 ENV PATH="/opt/.peri-binary:$PATH"
+# 先下载再执行，避免 curl 失败被管道末端的 bash 成功退出掩盖。
+RUN curl -fsSL --retry 3 --connect-timeout 30 --max-time 120 \
+        https://raw.githubusercontent.com/konghayao/peri/main/scripts/install.sh -o /tmp/peri-install.sh \
+    && PERI_INSTALL_DIR=/opt/.peri-binary bash /tmp/peri-install.sh \
+    && peri --version \
+    && rm /tmp/peri-install.sh
 
 RUN mkdir -p /app/workspaces
 VOLUME ["/app/workspaces"]

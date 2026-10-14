@@ -121,3 +121,9 @@ curl -s http://<host>:<port>/health
 ## 6. 静态资源与前端产物
 
 后端从 `apps/web/dist/` 挂载控制台静态资源。只改前端源码而不执行 `bun run build:web`，运行的仍是旧产物——这是本地与生产都容易踩的坑，也是「构建镜像前先 `build:web`」的原因（`docker/build-image.sh` 已把它放进构建流程）。
+
+## 7. 构建时 Peri 安装失败
+
+若旧版 Dockerfile 在安装 hindsight 插件时提示 `peri: not found`，先检查上一层安装日志：旧的 `curl ... | bash` 会掩盖脚本下载失败，不能以该层成功判断 Peri 已安装。主镜像与 Peri 沙箱镜像现改为先下载脚本、成功后执行，再通过 `peri --version` 验证安装目录与 `PATH`，下载阶段有有限重试和超时。
+
+更新 Dockerfile 后重新构建；若仍失败，查看安装层的原始错误，确认构建环境能访问 `raw.githubusercontent.com`、`api.github.com` 及 GitHub Release 下载地址，而不是跳过插件或伪造安装成功。

@@ -218,6 +218,24 @@ test("Docker 生产交付路径使用 apps workspace", () => {
   expect(findLegacyRootCopySources(dockerfile)).toEqual([]);
 });
 
+// 两种 Peri 镜像都必须保留下载失败，并在安装层验证 CLI，不能延迟到插件安装才报命令缺失。
+test.each(["Dockerfile", "docker/sandbox-peri/Dockerfile"])("%s 的 Peri 安装失败即中止", (path) => {
+  const instructions = readDockerInstructions(readRepoFile(path));
+  const installIndex = instructions.findIndex(
+    (instruction) => instruction.startsWith("RUN ") && instruction.includes("peri/main/scripts/install.sh"),
+  );
+  expect(installIndex).toBeGreaterThan(-1);
+  const install = instructions[installIndex];
+  expect(install).toMatch(/^RUN curl -fsSL --retry 3 --connect-timeout 30 --max-time 120 /);
+  expect(install).toContain(
+    "-o /tmp/peri-install.sh && PERI_INSTALL_DIR=/opt/.peri-binary bash /tmp/peri-install.sh && peri --version && rm /tmp/peri-install.sh",
+  );
+  expect(install).not.toContain("|");
+  expect(instructions.slice(0, installIndex)).toContain('ENV PATH="/opt/.peri-binary:$PATH"');
+  const pluginIndex = instructions.findIndex((instruction) => instruction.includes("peri plugin marketplace add"));
+  expect(pluginIndex).toBeGreaterThan(installIndex);
+});
+
 // 源码模式必须从模块位置推导应用根，不能受调用进程的工作目录影响。
 test("静态资源 fallback 指向 apps web 构建产物", () => {
   expect(resolveCtrlStaticAssetsDirectory(undefined)).toBe(resolve(repoRoot, "apps/web/dist"));

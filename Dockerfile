@@ -110,8 +110,13 @@ RUN ln -sf /usr/local/bin/bun /usr/local/bin/node \
     && ln -sf /usr/local/bin/bunx /usr/local/bin/npx
 # peri：本地执行的默认引擎（`RCS_DEFAULT_ENGINE_TYPE` 缺省的 `peri`），
 # 安装方式与 docker/sandbox-peri/Dockerfile 一致；未预装则默认引擎启动即失败。
-RUN export PERI_INSTALL_DIR=/opt/.peri-binary && curl -fsSL https://raw.githubusercontent.com/konghayao/peri/main/scripts/install.sh | bash
 ENV PATH="/opt/.peri-binary:$PATH"
+# 先下载再执行，避免 curl 失败被管道末端的 bash 成功退出掩盖。
+RUN curl -fsSL --retry 3 --connect-timeout 30 --max-time 120 \
+        https://raw.githubusercontent.com/konghayao/peri/main/scripts/install.sh -o /tmp/peri-install.sh \
+    && PERI_INSTALL_DIR=/opt/.peri-binary bash /tmp/peri-install.sh \
+    && peri --version \
+    && rm /tmp/peri-install.sh
 # 记忆插件：launchSpec.plugins 显式包含 hindsight 时
 # peri 的 settings.local.json 会开启 hindsight-memory@hindsight-plugin
 # 插件内容由远端仓库默认分支决定，Docker 层缓存看不见它：命令串不变就直接复用旧层，

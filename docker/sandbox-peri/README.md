@@ -30,6 +30,8 @@ RCS 主服务器                        sandbox-peri 容器
   **在镜像构建期装好**，随镜像固化。
 - 模型不在容器内配置：主服务为 Agent 绑定模型后由 peri handler 下发。
 
+安装脚本先下载成功再执行，并在同一构建层运行 `peri --version`；下载失败不会再被 `curl | bash` 掩盖。遇到旧版镜像构建报 `peri: not found` 时，更新 Dockerfile 后重建，网络排查见[部署说明](../../docs/operations/deployment.md#_7-构建时-peri-安装失败)。
+
 ## 镜像构建与发布
 
 本目录的 compose **只引用 CI 发布的镜像**（固定 tag、禁止环境变量插值，§13.7）：
