@@ -17,6 +17,14 @@ const COMPOSE_PATH = join(WORKFLOW_DIRECTORY, "docker-compose.yml");
 const composeText = await readFile(COMPOSE_PATH, "utf8");
 const envTemplate = await readFile(join(WORKFLOW_DIRECTORY, ".env.example"), "utf8");
 
+// 上游 SQL 不保证包含 USE，导入时必须显式选择本栈数据库，避免首次部署报 No database selected。
+test("mysql-init 导入 schema 时显式选择配置的数据库", async () => {
+  const script = await readFile(join(WORKFLOW_DIRECTORY, "init-mysql.sh"), "utf8");
+  const imports = script.split(/\r?\n/).filter((line) => /^\s*mysql\b.*<\s*\/schema\.sql\s*$/.test(line));
+  expect(imports).toHaveLength(1);
+  expect(imports[0]).toContain('"$MYSQL_DATABASE" < /schema.sql');
+});
+
 /** 按顶层 `  <name>:` 切出各服务块：只够本文件用，不追求通用 YAML 解析。 */
 function serviceBlocks(): Map<string, string> {
   const blocks = new Map<string, string>();

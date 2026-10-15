@@ -205,6 +205,8 @@ docker compose -f docker/workflow/docker-compose.yml ps
 
 关于 `depends_on`：共享 MySQL / rustfs 属于另一个 Compose 项目，**跨项目无法声明健康依赖**（写 `depends_on: mysql` 或 `rustfs` 会被 Compose 判为 `depends on undefined service` 直接拒绝），所以这里的就绪判定是各自初始化脚本里的「带超时的重试 + 明确诊断」，语义上等价于 `service_healthy`，只是判定放在容器里、报错文本由本目录自己控制。脚本**只读挂载 + 显式覆盖 entrypoint**：镜像自带的 entrypoint 会把参数当 mysqld / rustfs 启动参数劫持掉，不覆盖就直接走错路径。
 
+若 `mysql-init` 在第 ④ 步报 `ERROR 1046: No database selected`，检查 `init-mysql.sh` 的导入命令是否在 `< /schema.sql` 前显式传入 `"$MYSQL_DATABASE"`；上游 SQL 不保证自带 `USE`。修正后重新启动工作流编排即可重跑初始化，不要删除数据库或手工创建空表。
+
 默认宿主诊断入口为 `http://127.0.0.1:18081`（`WEB_LISTEN_ADDR` 提供），平台容器实际访问 `http://workflow-upstream:80`。端口只有这一条映射；容器内部的服务名与端口保持上游默认（如 `coze-server:8888`），不额外发布。
 
 ## 5. 接入 FenixAgent
