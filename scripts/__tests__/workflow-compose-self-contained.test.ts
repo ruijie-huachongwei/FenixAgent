@@ -38,6 +38,12 @@ function serviceBlocks(): Map<string, string> {
   return blocks;
 }
 
+// Atlas 要求数据库连接经 --url 传入，裸 DSN 位置参数无法满足必填选项。
+test("atlas-init 显式传递数据库连接的 --url 参数", () => {
+  const atlas = serviceBlocks().get("atlas-init") ?? "";
+  expect(atlas).toMatch(/- schema\s*\n\s*- apply\s*\n(?:\s*#[^\n]*\n)*\s*- --url\s*\n\s*- "mysql:\/\//);
+});
+
 // 交付面不得再出现上游源码目录变量：它既会让 `config` 在没有该目录的机器上失败，也意味着重新引入了 clone 上游这一步。
 test("compose 与初始化脚本不引用上游源码目录变量", async () => {
   const files = ["docker-compose.yml", "init-mysql.sh", "init-s3.sh", ".env.example"];

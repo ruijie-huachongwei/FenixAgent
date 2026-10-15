@@ -207,6 +207,8 @@ docker compose -f docker/workflow/docker-compose.yml ps
 
 若 `mysql-init` 在第 ④ 步报 `ERROR 1046: No database selected`，检查 `init-mysql.sh` 的导入命令是否在 `< /schema.sql` 前显式传入 `"$MYSQL_DATABASE"`；上游 SQL 不保证自带 `USE`。修正后重新启动工作流编排即可重跑初始化，不要删除数据库或手工创建空表。
 
+若 `atlas-init` 报 `required flag(s) "url" not set`，检查编排中的 `schema apply` 是否用独立的 `--url` 参数传入随后一项 MySQL DSN；裸 DSN 不是连接选项。修正编排后重建 `atlas-init` 容器再继续启动，不必替换 Atlas 镜像或删除数据库。
+
 默认宿主诊断入口为 `http://127.0.0.1:18081`（`WEB_LISTEN_ADDR` 提供），平台容器实际访问 `http://workflow-upstream:80`。端口只有这一条映射；容器内部的服务名与端口保持上游默认（如 `coze-server:8888`），不额外发布。
 
 ## 5. 接入 FenixAgent

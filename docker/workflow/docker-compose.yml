@@ -104,6 +104,7 @@ services:
       - schema
       - apply
       # DSN 由本编排拼（与 coze-server 的 MYSQL_DSN 同源同值），凭据来自主服务 env。
+      - --url
       - "mysql://${MYSQL_USER:-coze}:${MYSQL_PASSWORD:-coze123}@mysql:3306/${MYSQL_DATABASE:-opencoze}?charset=utf8mb4&parseTime=True"
       - --to
       - file:///opencoze_latest_schema.hcl
